@@ -35,3 +35,5 @@ This repository contains statistical analysis code for a randomized controlled t
 - **05. Additional Figures.R**
   Waterfall plots for each participant's change in abstinent days (%) by condition (Placebo or Psilocybin) 1) Baseline to Follow-Up and 2) Prepartion to Follow-Up.
 
+- **06. [cud_trial_data_cleaning_notes.md](cud_trial_data_cleaning_notes.md)**  
+  Details on how study timepoints were mapped to analysis periods and how survival and abstinence data were prepared, including known issues and resolutions related to missing `DAYS` variables.

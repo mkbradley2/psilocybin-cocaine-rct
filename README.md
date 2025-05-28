@@ -1,5 +1,8 @@
 # Psilocybin-Assisted Therapy for Cocaine Use Disorder
+### Created by: Melissa Bradley
+### Version: 05/27/2025
 
+## Background
 This repository contains statistical analysis code for a randomized controlled trial comparing psilocybin-assisted therapy to placebo in individuals with cocaine use disorder.
 
 ## Overview

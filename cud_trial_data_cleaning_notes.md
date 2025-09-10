@@ -51,9 +51,8 @@
 
 ---
 
-## Notes from Peter
+## Observation Variables (Description)
 
-> “Any event, we now have a number of observation variables:
 >
 > 1. Number of days under observation during the pre-screen period  
 > 2. Number of days under observation during the preparation period  
@@ -73,3 +72,4 @@ There are 6 participants missing `DAYS` values:
 The remaining 6 were not accounted for and were handled using the `Integration` variable instead in the survival analysis dataset.
 
 ---
+

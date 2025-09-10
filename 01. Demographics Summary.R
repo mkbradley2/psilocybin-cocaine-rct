@@ -18,9 +18,9 @@ library(ggplot2)     # Plotting
 setwd("C:/Users/mbrad/Desktop/Hendricks Lab/Psilocybin and CUD Clinical Trial (Peter)/Data/Input")
 
 # Load Data
-status_and_days <- read_sav("Otto survival.sav")
+status_and_days <- read_sav("Survival.sav")
 time_vars <- read_sav("Observation Days.sav")
-cocaine_data <- read_sav("Peters data testing SPSS.sav")
+cocaine_data <- read_sav("cocaine_data.sav")
 
 # =====================
 # Create Codebook
@@ -204,3 +204,4 @@ print(demographic_table)
 
 # Optionally save as RTF or HTML for manuscript review
 # gtsave(as_gt(demographic_table), filename = "results/tables/demographic_table_expanded.rtf")
+

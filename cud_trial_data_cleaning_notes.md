@@ -47,7 +47,7 @@
 | Prescreen     | Prescreen 1        | Baseline                                   |
 | Preparation   | Prep Session 1     | Screening                                  |
 | Drug          | Administration     | Preparation                                |
-| Integration   | Integration 1?     | Full Post-Drug Period (Integration + F/U)? |
+| Integration   | Integration 1      | Full Post-Drug Period (Integration + F/U) |
 
 ---
 
@@ -72,4 +72,5 @@ There are 6 participants missing `DAYS` values:
 The remaining 6 were not accounted for and were handled using the `Integration` variable instead in the survival analysis dataset.
 
 ---
+
 

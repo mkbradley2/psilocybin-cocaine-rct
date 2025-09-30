@@ -3,7 +3,7 @@
 ### Version: 05/27/2025
 
 ## Background
-This repository contains statistical analysis code for a randomized controlled trial of psilocybin-assisted psychotherapy in the treatment of cocaine use disorder
+This repository contains statistical analysis code for a randomized controlled trial of psilocybin-assisted psychotherapy in the treatment of cocaine use disorder.
 
 ## Overview
 

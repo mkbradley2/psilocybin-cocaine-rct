@@ -9,8 +9,7 @@
 #   Conduct t-tests for each timepoint to compare placebo vs. psilocybin.
 #   Models include adjusted and unadjusted specifications for pre- and post-
 #   treatment periods, with and without condition-by-time interaction terms.
-#   Includes estimated marginal means, Hedge's g calculations and 
-#   post-hoc power simulations (n=1000) 
+#   Includes estimated marginal means, Hedge's g calculations 
 
 library(tidyverse)   # Data Tidying
 library(haven)       # Importing data from other software
@@ -169,3 +168,4 @@ hedges_g_results <- contrast_df %>%
   )
 
 print(hedges_g_results)
+

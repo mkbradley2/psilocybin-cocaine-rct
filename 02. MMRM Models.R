@@ -169,34 +169,3 @@ hedges_g_results <- contrast_df %>%
   )
 
 print(hedges_g_results)
-
-# ================================================
-# Post-Hoc Power Analysis for MMRM
-# ================================================
-
-# Compare Fitted lmer model w/ MMRM model (needed to use different package/model to 
-# conduct MMRM power analysis)
-
-# Refit the model for simr (random intercepts and slopes per subject)
-sim_model <- lmer(
-  Cocaine_Variable ~ condition_recoded + Time_Recoded + days_under_obs + Gender + 
-    (1 | ID_Sub),
-  data = cocaine_data_mmrm_post,
-  REML = FALSE
-)
-
-# Extend the model to current sample size
-sim_model_ext <- extend(sim_model, along = "ID_Sub", n = length(unique(cocaine_data_mmrm_post$ID_Sub)))
-
-# Compare observed fixed effect to MMRM coefficient
-observed_effect <- summary(model_post_no_inter)$coefficients["condition_recoded1", "Estimate"]
-sim_effect <- summary(sim_model)$coefficients["condition_recoded1", "Estimate"]
-effect_difference <- observed_effect - sim_effect
-
-print(paste("Observed MMRM effect for condition_recoded1:", round(observed_effect, 3)))
-print(paste("Fitted lmer effect for condition_recoded1:", round(sim_effect, 3)))
-print(paste("Difference between MMRM and lmer estimates:", round(effect_difference, 3)))
-
-# Run power simulations
-power_result <- powerSim(sim_model_ext, fixed("condition_recoded1", "t"), nsim = 1000)
-summary(power_result)

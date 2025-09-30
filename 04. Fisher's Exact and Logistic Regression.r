@@ -93,30 +93,6 @@ or_with_cov <- data.frame(
 print(or_no_cov)
 print(or_with_cov)
 
-# Post-hoc Power Simulation
-obs_or <- exp(coef(model_no_covariates)["condition_recoded"])
-n <- 39
-n_sim <- 1000
-alpha <- 0.05
-
-simulate_firth_logistic <- function(n, or, n_sim = 1000, alpha = 0.05) {
-  p_vals <- numeric(n_sim)
-  for (i in 1:n_sim) {
-    treat <- rbinom(n, 1, 0.5)
-    log_odds <- log(or) * treat
-    probs <- 1 / (1 + exp(-log_odds))
-    outcome <- rbinom(n, 1, probs)
-    sim_df <- data.frame(STATUS = outcome, treatment = factor(treat, levels = c(0,1), labels = c("Placebo", "Psilocybin")))
-    fit <- tryCatch(logistf(STATUS ~ treatment, data = sim_df), error = function(e) NULL)
-    p_vals[i] <- if (!is.null(fit)) fit$prob["treatmentPsilocybin"] else NA
-  }
-  mean(p_vals < alpha, na.rm = TRUE)
-}
-
-set.seed(2025)
-simulated_power_firth_logit <- simulate_firth_logistic(n, obs_or, n_sim, alpha)
-print(simulated_power_firth_logit)
-
 # Hedges' g - Binary outcome: sustained abstinence
 hedges_abstinence_result <- cohen.d(status_recoded ~ factor(condition_recoded), data = cocaine_data_log_exact, pooled = TRUE, hedges.correction = TRUE)
 print(hedges_abstinence_result)
@@ -131,5 +107,6 @@ hedges_summary <- tibble(
   `Std. Error` = sqrt(hedges_abstinence_result$var),
   `Effect Magnitude` = as.character(hedges_abstinence_result$magnitude)
 )
+
 
 print(hedges_summary)

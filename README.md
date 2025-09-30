@@ -1,25 +1,25 @@
-# Psilocybin-Assisted Therapy for Cocaine Use Disorder
+# Psilocybin-assisted Psychotherapy in the Treatment of Cocaine Use Disorder: A Randomized Controlled Trial
 ### Created by: Melissa Bradley
 ### Version: 05/27/2025
 
 ## Background
-This repository contains statistical analysis code for a randomized controlled trial comparing psilocybin-assisted therapy to placebo in individuals with cocaine use disorder.
+This repository contains statistical analysis code for a randomized controlled trial of psilocybin-assisted psychotherapy in the treatment of cocaine use disorder
 
 ## Overview
 
 - **Primary Outcomes:**  
   - Percentage of days abstinent from cocaine  
-  - Time to first cocaine lapse  
-  - Sustained abstinence from cocaine  
+  - Complete abstinence from cocaine
+  - Time to first cocaine lapse after drug administration  
 
 - **Statistical Models and Tests:**  
-  - T-Tests
-  - MMRM (Mixed Models for Repeated Measures)  
+  - Wilcoxon rank-sum tests and independent samples t-tests
+  - Mixed Models for Repeated Measures (MMRMs)  
   - Kaplan-Meier curve and Cox proportional hazards (Survival Analysis)
   - Fisher’s Exact Test 
   - Firth’s penalized logistic regression   
   - Hedges’ g effect sizes  
-  - Post-hoc power simulations for all models  
+  
 
 ## Scripts
 

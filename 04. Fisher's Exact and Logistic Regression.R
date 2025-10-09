@@ -1,4 +1,4 @@
-# 04. Fisher's Exact and Logistic Regression.r
+# 04. Fisher's Exact and Logistic Regression
 # Psilocybin for Cocaine Use Disorder RCT - Fisher's Exact Test, Firth Logistic Regression, and Hedges' g
 # Author: Melissa Bradley
 # Lab: Dr. Peter Hendricks, UAB Drug Use and Behavior Lab
@@ -148,3 +148,4 @@ hedges_summary <- tibble(
 )
 
 print(hedges_summary)
+

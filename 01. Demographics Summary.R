@@ -1,6 +1,5 @@
 # 01. Demographics Summary.r
 # Psilocybin for Cocaine Use Disorder RCT - Baseline Demographic and Clinical Summary
-# Author: Melissa Bradley
 # Lab: Dr. Peter Hendricks, UAB Drug Use and Behavior Lab
 # Date: 2025-04-05
 #
@@ -15,17 +14,14 @@ library(kableExtra)  # Table features (used w/ gtsummary)
 library(ggplot2)     # Plotting
 
 # Set Working Directory
-setwd("C:/Users/mbrad/Desktop/Hendricks Lab/Psilocybin and CUD Clinical Trial (Peter)/Data/Input")
+setwd("C:/Users/mbrad/Desktop/Hendricks Lab/Psilocybin and CUD Clinical Trial (Peter)/Data/Output")
 
-# Load Data
-status_and_days <- read_sav("Survival.sav")
-time_vars <- read_sav("Observation Days.sav")
-cocaine_data <- read_sav("cocaine_data.sav")
+cocaine_data <- read.csv("cocaine_RCT_data.csv")
 
 # =====================
 # Create Codebook
 # =====================
-codebook_1 <- data.frame(
+codebook <- data.frame(
   Column_Name = names(cocaine_data),
   Description = sapply(1:ncol(cocaine_data), function(i) {
     label <- attr(cocaine_data[[i]], "label")
@@ -37,19 +33,7 @@ codebook_1 <- data.frame(
   })
 )
 
-codebook_2 <- data.frame(
-  Column_Name = names(time_vars),
-  Description = sapply(1:ncol(time_vars), function(i) {
-    label <- attr(time_vars[[i]], "label")
-    if (is.null(label)) NA else label
-  }),
-  Value_Labels = sapply(1:ncol(time_vars), function(i) {
-    labels <- attr(time_vars[[i]], "labels")
-    if (is.null(labels)) NA else paste(names(labels), "=", labels, collapse = "; ")
-  })
-)
-
-codebook <- rbind(codebook_1, codebook_2)
+print(codebook)
 
 
 # =====================
@@ -57,7 +41,7 @@ codebook <- rbind(codebook_1, codebook_2)
 # =====================
 qq_vars <- c("Age", "Age_First_Use", "Age_Reg_Use", "Years_Used", "Quit_Attempts", "Quit_Long")
 
-qq_data <- cocaine_data %>%
+qq_data <- cocaine_data_joined %>%
   select(Condition, all_of(qq_vars)) %>%
   pivot_longer(cols = -Condition, names_to = "Variable", values_to = "Value") %>%
   filter(!is.na(Value))
@@ -202,6 +186,4 @@ demographic_table <- cocaine_demo %>%
 # Output
 print(demographic_table)
 
-# Optionally save as RTF or HTML for manuscript review
 # gtsave(as_gt(demographic_table), filename = "results/tables/demographic_table_expanded.rtf")
-

@@ -57,7 +57,7 @@
 > 1. Number of days under observation during the pre-screen period  
 > 2. Number of days under observation during the preparation period  
 > 3. Number of days between the last preparation period and the drug administration  
-> 4. Number of days under observation during the integration period”
+> 4. Number of days under observation during the integration period
 
 ---
 
@@ -72,5 +72,6 @@ There are 6 participants missing `DAYS` values:
 The remaining 6 were not accounted for and were handled using the `Integration` variable instead in the survival analysis dataset.
 
 ---
+
 
 

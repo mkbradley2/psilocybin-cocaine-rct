@@ -35,10 +35,10 @@ This repository contains statistical analysis code for a randomized controlled t
 - **04. Fisher's Exact and Logistic Regression.R**  
   Fisher's Exact Test, Firth logistic regression for <i>Sustained abstinence from cocaine</i> (Primary Outcome 3), Hedges’ g calculation for group effect size, and simulation-based power estimation for binary outcomes.
 
-- **05. Additional Figures.R**
+- **05. Additional Figures.R** <br>
   Waterfall plots for each participant's change in abstinent days (%) by condition (Placebo or Psilocybin) 1) Baseline to Follow-Up and 2) Prepartion to Follow-Up.
 
-- **06. Ancillary Statistics.R**
+- **06. Ancillary Statistics.R** <br>
   Additional statistical tests for manuscript.
 
 - **07. [cud_trial_data_cleaning_notes.md](cud_trial_data_cleaning_notes.md)**  

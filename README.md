@@ -30,7 +30,7 @@ This repository contains statistical analysis code for a randomized controlled t
   MMRM analysis of <i>Percentage of days abstinent from cocaine</i> (Primary Outcome 1), including adjusted/unadjusted models, time-by-condition interactions, and Hedge’s g effect size estimation. 
 
 - **03. Survival Analysis.R**  
-  Kaplan-Meier curves and log-rank tests, Cox models for <i> time to first cocaine lapse</i> (Primary Outcome 2), and survival-based post-hoc power simulations. Includes optional models using Firth's correction.
+  Kaplan-Meier curves and log-rank tests, Cox models for <i> time to first cocaine lapse</i> (Primary Outcome 2).
 
 - **04. Fisher's Exact and Logistic Regression.R**  
   Fisher's Exact Test, Firth logistic regression for <i>Sustained abstinence from cocaine</i> (Primary Outcome 3), Hedges’ g calculation for group effect size, and simulation-based power estimation for binary outcomes.

@@ -12,51 +12,90 @@
 library(tidyverse)   # Data tidying
 library(logistf)     # Firth logistic regression
 library(effsize)     # Hedges' g
+library(haven)       # Loading in different data types
+library(foreign)     # Loading in different data types p. 2
 
 # Load data
-cocaine_data <- read_sav("Peters data testing SPSS.sav")
-time_vars <- read_sav("Observation Days.sav")
-status_and_days <- read_sav("Otto survival.sav")
+# cocaine_data <- read_sav("Peters data testing SPSS.sav")
+# time_vars <- read_sav("Observation Days.sav")
+# status_and_days <- read_sav("Otto survival.sav")
+
+cocaine_data <- read.csv("cocaine_RCT_data.csv")
 
 # ================================================
 # Data Cleaning for Modeling
 # ================================================
 
-# Merge survival status and filter to complete cases
-cocaine_data_filtered <- cocaine_data %>%
-  left_join(select(status_and_days, ID_Sub, STATUS, DAYS), by = "ID_Sub") %>%
-  filter(ID_Sub %in% time_vars$ID_Sub, !is.na(Time_Recoded)) %>%
+cocaine_data_log_exact <- cocaine_data_final %>%
   mutate(
-    status_recoded = if_else(STATUS == 0, 1, if_else(STATUS == 1, 0, NA_real_)),
-    condition_recoded = if_else(Condition == 2, 1, if_else(Condition == 1, 0, NA_real_))
-  ) %>%
-  group_by(ID_Sub) %>%
-  fill(everything(), .direction = "downup") %>%
-  ungroup() %>%
-  distinct(ID_Sub, .keep_all = TRUE)
-
-# Prepare observation duration variables
-specific_columns <- time_vars %>%
-  group_by(ID_Sub) %>%
-  mutate(days_under_obs = rowSums(across(c(Prescreen, Preparation, Drug, Integration)), na.rm = TRUE)) %>%
-  select(ID_Sub, Prescreen, Preparation, Drug, Integration, days_under_obs) %>%
-  fill(everything(), .direction = "downup") %>%
-  ungroup()
-
-# Merge into final modeling dataset
-cocaine_data_log_exact <- cocaine_data_filtered %>%
-  left_join(specific_columns, by = "ID_Sub") %>%
-  distinct(ID_Sub, .keep_all = TRUE) %>%
-  mutate(
-    days_recoded = case_when(
-      STATUS == 1 ~ Integration,
-      ID_Drug %in% c(1027, 1030) ~ Integration + 91,
-      ID_Drug == 1037 ~ Integration + 1,
-      ID_Drug == 1012 ~ 0,
-      TRUE ~ if_else(!is.na(DAYS), DAYS + 1, NA_real_)
+    # Map Time -> ordered integer code
+    Time_code = case_when(
+      Time == "Prescreening Assessment 1" ~ 1L,
+      Time == "Prescreening Assessment 2" ~ 2L,
+      Time == "Prescreening Assessment 3" ~ 3L,
+      Time == "Prescreening Assessment 4" ~ 4L,
+      Time == "Medical Screening"         ~ 5L,
+      Time == "Preparation 1"             ~ 6L,
+      Time == "Preparation 2"             ~ 7L,
+      Time == "Preparation 3"             ~ 8L,
+      Time == "Preparation 4"             ~ 9L,
+      Time == "Preparation 5"             ~ 10L,
+      Time == "MRI 1"                     ~ 11L,
+      Time == "Drug Administration"       ~ 12L,
+      Time == "Integration/MRI2"          ~ 13L,
+      Time == "Follow-up 1"               ~ 14L,
+      Time == "Follow-up 2"               ~ 15L,
+      Time == "Follow-up 3"               ~ 16L,
+      Time == "Follow-up 4"               ~ 17L,
+      Time == "90-day Assessment"         ~ 18L,
+      Time == "180-day Assessment"        ~ 19L,
+      TRUE ~ NA_integer_
+    ),
+    # Collapse Time_code into broader phases
+    Time_Recoded = case_when(
+      Time_code == 1L        ~ 1L,   # prescreen 1
+      Time_code %in% 2L:6L   ~ 2L,   # prescreen 2..prep 1
+      Time_code %in% 7L:12L  ~ 3L,   # prep 2..drug admin
+      Time_code %in% 13L:17L ~ 4L,   # integration/followups
+      Time_code == 18L       ~ 5L,   # 90-day
+      Time_code == 19L       ~ 6L,   # 180-day
+      TRUE ~ NA_integer_
     )
   ) %>%
-  select(ID_Sub, Gender, Ethnicity, Race, Condition, days_recoded, condition_recoded, status_recoded, STATUS, Integration)
+  group_by(ID_Sub) %>%
+  # Only fill the fields we actually need
+  fill(Time_code, Time_Recoded, STATUS, Condition, ID_Drug, DAYS, Integration,
+       .direction = "downup") %>%
+  ungroup() %>%
+  mutate(
+    # status: 1 = event (lapse), 0 = censored
+    status_recoded = case_when(
+      STATUS == 0 ~ 1L,
+      STATUS == 1 ~ 0L,
+      TRUE ~ NA_integer_
+    ),
+    # condition: 1 = Psilocybin, 0 = Placebo (adjust if your coding differs)
+    condition_recoded = case_when(
+      Condition == "Psilocybin" ~ 1,
+      Condition == "Placebo"    ~ 0,
+      TRUE ~ NA_real_
+    ),
+    # recode days; make numeric to avoid type conflicts
+    days_recoded = case_when(
+      STATUS == 1                    ~ as.numeric(Integration),      # abstinent censored at Integration
+      ID_Drug %in% c(1027, 1030)     ~ as.numeric(Integration) + 91, # LTFU at ~90d (+1 for inclusive if desired)
+      ID_Drug == 1037                ~ as.numeric(Integration) + 1,
+      ID_Drug == 1012                ~ 0,
+      !is.na(DAYS)                   ~ as.numeric(DAYS) + 1,
+      TRUE                           ~ NA_real_
+    )
+  ) %>%
+  distinct(ID_Sub, .keep_all = TRUE) %>%
+  select(
+    ID_Sub, Gender, Ethnicity, Race, Condition,
+    Prescreen, Preparation, Drug, Integration,
+    days_recoded, condition_recoded, status_recoded, STATUS
+  )
 
 # Fisher's Exact Test
 fisher_table <- table(cocaine_data_log_exact$condition_recoded, cocaine_data_log_exact$status_recoded)
@@ -76,11 +115,11 @@ or_no_cov <- data.frame(
 ) %>%
   mutate(across(2:4, round, 3))
 
-# Firth Logistic Regression - With Covariates
+# Firth Logistic Regression - With Integration Days
 model_with_covariates <- logistf(STATUS ~ condition_recoded + Integration, data = cocaine_data_log_exact)
 summary(model_with_covariates)
 
-# OR table - With Covariates (**Covariate Models = Supplemental**)
+# OR table - With Integration Days (**Covariate Models = Supplemental**)
 or_with_cov <- data.frame(
   Term = names(model_with_covariates$coefficients),
   OR = exp(model_with_covariates$coefficients),
@@ -107,6 +146,5 @@ hedges_summary <- tibble(
   `Std. Error` = sqrt(hedges_abstinence_result$var),
   `Effect Magnitude` = as.character(hedges_abstinence_result$magnitude)
 )
-
 
 print(hedges_summary)

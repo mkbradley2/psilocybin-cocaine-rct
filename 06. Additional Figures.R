@@ -1,7 +1,7 @@
 # 05. Additional Figures.r
 # Psilocybin CUD Trial - Waterfall Plots
 # Melissa Bradley
-# 01/20/25
+# 04/20/25
 
 library(ggplot2)
 library(dplyr)
@@ -67,7 +67,8 @@ graph_data <- cocaine_data_filtered %>%
     prep_change = abstinence_post - abstinence_preadmin
   ) %>%
   filter(!is.na(abstinence_baseline) & !is.na(abstinence_post)) %>%
-  mutate(Group = if_else(condition_recoded == 1, "Psilocybin", "Placebo"))
+  mutate(Group = factor(if_else(condition_recoded == 1, "Psilocybin", "Placebo"),
+                        levels = c("Psilocybin", "Placebo")))
 
 # Baseline to Follow-Up Waterfall
 waterfall_data_baseline <- graph_data %>%
@@ -76,10 +77,11 @@ waterfall_data_baseline <- graph_data %>%
 
 waterfall_plot_baseline <- ggplot(waterfall_data_baseline, aes(x = Patient, y = abstinence_change, fill = Group)) +
   geom_col() +
-  scale_fill_manual(values = c("Placebo" = "#F8766D", "Psilocybin" = "#00BFC4")) +
+  scale_fill_manual(values = c("Psilocybin" = "#00BFC4", "Placebo" = "#F8766D")) +
   labs(x = "Participants (Ranked by Change in Abstinent Days)", y = "Change in Abstinent Days (%)", fill = "Treatment Group") +
   scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   theme_minimal() +
+  guides(fill = guide_legend(title = NULL)) +
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), panel.grid.major.x = element_blank(), legend.position = "right", plot.title = element_text(face = "bold", size = 14, hjust = 0.5), plot.subtitle = element_text(size = 12, hjust = 0.5), axis.title.y = element_text(size = 12), axis.title.x = element_text(size = 12))
 
 print(waterfall_plot_baseline)
@@ -92,10 +94,11 @@ waterfall_data_prep <- graph_data %>%
 
 waterfall_plot_prep <- ggplot(waterfall_data_prep, aes(x = Patient, y = prep_change, fill = Group)) +
   geom_col() +
-  scale_fill_manual(values = c("Placebo" = "#F8766D", "Psilocybin" = "#00BFC4")) +
+  scale_fill_manual(values = c("Psilocybin" = "#00BFC4", "Placebo" = "#F8766D")) +
   labs(x = "Participants (Ranked by Change in Abstinent Days)", y = "Change in Abstinent Days (%)", fill = "Treatment Group") +
   scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   theme_minimal() +
+  guides(fill = guide_legend(title = NULL)) +
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), panel.grid.major.x = element_blank(), legend.position = "right", plot.title = element_text(face = "bold", size = 14, hjust = 0.5), plot.subtitle = element_text(size = 12, hjust = 0.5), axis.title.y = element_text(size = 12), axis.title.x = element_text(size = 12))
 
 print(waterfall_plot_prep)

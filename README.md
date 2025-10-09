@@ -45,5 +45,4 @@ This repository contains statistical analysis code for a randomized controlled t
   Details on how study timepoints were mapped to analysis periods and how survival and abstinence data were prepared, including known issues and resolutions related to missing `DAYS` variables.
 
 - **08. [psilocybin_cocaine_RCT_codebook.xlsx](psilocybin_cocaine_RCT_codebook.xlsx)** 
-
   Codebook with variable names, descriptions and values (dataset available upon request from PI on Synapse).

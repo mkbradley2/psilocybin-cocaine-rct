@@ -1,80 +1,76 @@
 # 03. Survival Analysis.r
-# Psilocybin for Cocaine Use Disorder RCT - Survival Analysis and Post-hoc Power Simulations
-# Author: Melissa Bradley
+# Psilocybin for Cocaine Use Disorder RCT - Survival Analysis
 # Lab: Dr. Peter Hendricks, UAB Drug Use and Behavior Lab
 # Date: 2025-04-05
 #
 # Purpose:
 #   Conduct survival analysis on time to lapse using Cox models and Kaplan-Meier curves.
-#   Assess statistical power post-hoc through simulation, including Firth correction 
-#   for small-sample bias (correction not included in final manuscript, see below).
+#   Assess statistical power post-hoc through simulation.
 
-library(tidyverse)   # Wrangling
+library(haven)       # Alternate Data Formats
+library(tidyverse)   # Tidying
 library(survival)    # Survival models
 library(survminer)   # KM plots
 library(broom)       # Model tidying
 library(coxphf)      # Firth’s correction
 
+setwd("C:/Users/mbrad/Desktop/Hendricks Lab/Psilocybin and CUD Clinical Trial (Peter)/Data/Input")
 
 # Load data
-cocaine_data <- read_sav("Peters data testing SPSS.sav")
-time_vars <- read_sav("Observation Days.sav")
-status_and_days <- read_sav("Otto survival.sav")
+
+cocaine_data <- read.csv("C:/Users/mbrad/Desktop/Hendricks Lab/Psilocybin and CUD Clinical Trial (Peter)/Data/Output/cocaine_RCT_data.csv")
 
 # ================================================
 # Data Cleaning for Modeling
 # ================================================
 
-cocaine_data_filtered <- cocaine_data %>%
-  left_join(select(status_and_days, ID_Sub, STATUS, DAYS), by = "ID_Sub") %>%
-  filter(ID_Sub %in% time_vars$ID_Sub, !is.na(Time_Recoded)) %>%
+cocaine_data_survival <- cocaine_data %>%
+  mutate(across(where(is.labelled), as_factor)) %>%
   mutate(
-    status_recoded = case_when(
-      STATUS == 0 ~ 1,
-      STATUS == 1 ~ 0,
+    Condition = as.character(Condition),
+    STATUS_reconstructed = case_when(
+      # Has DAYS (time to lapse) = EVENT (STATUS 0)
+      !is.na(DAYS) ~ 0,
+      # No DAYS (never lapsed) = CENSORED (STATUS 1)
+      # This includes both completers AND lost to follow-up
+      is.na(DAYS) ~ 1,
       TRUE ~ NA_real_
     ),
+    
+    # Convert to standard survival coding
+    Lapse_Event = case_when(
+      STATUS_reconstructed == 0 ~ 1,  # Event (lapsed)
+      STATUS_reconstructed == 1 ~ 0,  # Censored (no lapse observed)
+      TRUE ~ NA_real_
+    ),
+    
     condition_recoded = case_when(
-      Condition == 2 ~ 1,
-      Condition == 1 ~ 0,
+      Condition == "Psilocybin" ~ 1,
+      Condition == "Placebo" ~ 0,
       TRUE ~ NA_real_
     )
   ) %>%
   group_by(ID_Sub) %>%
   fill(everything(), .direction = "downup") %>%
   ungroup() %>%
-  distinct(ID_Sub, .keep_all = TRUE)
-
-specific_columns <- time_vars %>%
-  group_by(ID_Sub) %>%
-  mutate(days_under_obs = sum(Prescreen, Preparation, Drug, Integration, na.rm = TRUE)) %>%
-  select(ID_Sub, Prescreen, Preparation, Drug, Integration, days_under_obs) %>%
-  fill(everything(), .direction = "downup") %>%
-  ungroup()
-
-combined_data <- cocaine_data_filtered %>%
-  left_join(specific_columns, by = "ID_Sub") %>%
-  distinct(ID_Sub, .keep_all = TRUE)
-
-cocaine_data_survival <- combined_data %>%
+  distinct(ID_Sub, .keep_all = TRUE) %>%
   mutate(
     days_recoded = case_when(
-      STATUS == 1 ~ Integration,
-      ID_Drug == 1027 ~ Integration + 90 + 1,
-      ID_Drug == 1030 ~ Integration + 90 + 1,
-      ID_Drug == 1037 ~ Integration + 1,
-      ID_Drug == 1012 ~ 0,
-      TRUE ~ if_else(!is.na(DAYS), DAYS + 1, NA_real_)
+      STATUS == 1 ~ Integration + 180, # If no lapse, observed through Integration + 180  
+      ID_Drug == 1027 ~ Integration + 90 + 1, # No 180 Data
+      ID_Drug == 1030 ~ Integration + 90 + 1, # No 180 Data
+      ID_Drug == 1037 ~ Integration + 1,      # No F/U Data
+      ID_Drug == 1012 ~ 0,                    # No Post-Drug Administration Data
+      TRUE ~ DAYS + 1  # Event: use actual time to lapse
     )
-  ) %>%
-  select(ID_Sub, Gender, Ethnicity, Race, Condition, days_recoded, condition_recoded, status_recoded, STATUS, Integration)
+  )
 
 # ================================================
 # Survival Analysis
 # ================================================
 
-km_fit <- survfit(Surv(time = cocaine_data_survival$days_recoded, event = cocaine_data_survival$status_recoded) ~ condition_recoded, data = cocaine_data_survival)
-logrank_test <- survdiff(Surv(days_recoded, status_recoded) ~ condition_recoded, data = cocaine_data_survival)
+km_fit <- survfit(Surv(time = cocaine_data_survival$days_recoded, event = cocaine_data_survival$Lapse_Event) ~ condition_recoded, data = cocaine_data_survival)
+logrank_test <- survdiff(Surv(days_recoded, Lapse_Event) ~ condition_recoded, data = cocaine_data_survival)
 chisq_stat <- logrank_test$chisq
 df <- length(logrank_test$n) - 1
 p_val <- 1 - pchisq(chisq_stat, df)
@@ -86,11 +82,26 @@ cat("p-value =", formatC(p_val, digits = 6, format = "f"), "\n")
 
 summary(km_fit)
 
+# Cox Model to get HR and 95% CI
+cox_model <- coxph(Surv(days_recoded, Lapse_Event) ~ condition_recoded, data = cocaine_data_survival)
+hr <- summary(cox_model)$coef[1, "exp(coef)"]
+hr_ci <- summary(cox_model)$conf.int[1, c("lower .95", "upper .95")]
+
+# Annotated label
+hr_label <- paste0("HR = ", round(hr, 2), " (95% CI: ", round(hr_ci[1], 2), "–", round(hr_ci[2], 2), ")\n",
+                   "Log-rank p = ", formatC(p_val, digits = 4, format = "f"))
+
+# KM plot with risk table and HR annotation
 survival_plot <- ggsurvplot(
   km_fit, 
-  data = cocaine_data_survival, 
-  pval = TRUE,
-  pval.coord = c(0, 0.03),
+  data = cocaine_data_survival,
+  risk.table = TRUE,
+  risk.table.title = "Number at Risk (Censored)",
+  risk.table.y.text.col = TRUE,
+  risk.table.height = 0.2,
+  risk.table.fontsize = 4,
+  risk.table.col = "strata",
+  pval = FALSE,  # we'll use our own annotation instead
   conf.int = TRUE,
   xlab = "Days",
   ylab = "Proportion Without Lapse (%)",
@@ -98,29 +109,35 @@ survival_plot <- ggsurvplot(
   legend.title = "",
   legend.labs = c("Placebo", "Psilocybin"),
   legend = "right",
-  ggtheme = theme_minimal(base_size = 14) +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
-      plot.margin = margin(10, 10, 10, 10),
-      legend.position = "right",
-      legend.text = element_text(size = 12),
-      axis.title.x = element_text(size = 14),
-      axis.title.y = element_text(size = 14),
-      panel.grid = element_blank(),
-      axis.line.x = element_line(color = "black", linewidth = 0.8),
-      axis.line.y = element_line(color = "black", linewidth = 0.8)
-    )
+  ggtheme = theme_minimal(base_size = 14),
+  palette = c("#F8766D", "#00BFC4")
 )
+
+# Add HR and p-value as annotation on plot
+# survival_plot$plot <- survival_plot$plot + 
+#   annotate("text", x = 5, y = 0.05, hjust = 0, vjust = 0, size = 4.5, label = hr_label)
+
+survival_plot$plot <- survival_plot$plot + 
+  annotate(
+    "text",
+    x = 175,  # Adjust based on max follow-up time
+    y = 0.95,  # Close to the top
+    hjust = 0,
+    size = 4.5,
+    label = hr_label
+  )
+
+print(survival_plot)
 
 ggsave(
   filename = "cocaine_survival_curve_notitle.png",
-  plot = survival_plot$plot,
+  plot = print(survival_plot),
   width = 14,
-  height = 7.5,
+  height = 9,
   dpi = 300
 )
 
-surv_object <- Surv(time = cocaine_data_survival$days_recoded, event = cocaine_data_survival$status_recoded)
+surv_object <- Surv(time = cocaine_data_survival$days_recoded, event = cocaine_data_survival$event)
 
 cox_model_unadjusted <- coxph(surv_object ~ condition_recoded, data = cocaine_data_survival)
 cox_model_adjusted <- coxph(surv_object ~ condition_recoded + Gender, data = cocaine_data_survival)
@@ -142,101 +159,3 @@ cox_summaries <- bind_rows(cox_summary_unadjusted, cox_summary_adjusted) %>%
   )
 
 print(cox_summaries)
-
-# Proportion of participants who had an event (lapse)
-event_rate <- mean(cocaine_data_survival$status_recoded)
-
-# Observed hazard ratio from Cox model
-obs_hr <- exp(coef(cox_model_unadjusted)["condition_recoded"])
-
-simulate_cox_data <- function(n, hr, event_rate, max_followup = 180) {
-  treatment <- rbinom(n, 1, 0.5)
-  lambda0 <- -log(1 - event_rate) / max_followup
-  hazard <- lambda0 * exp(log(hr) * treatment)
-  time <- rexp(n, hazard)
-  time <- pmin(time, max_followup)
-  status <- as.integer(time < max_followup)
-  data.frame(time = time, status = status, treatment = treatment)
-}
-
-set.seed(2025)
-n_sim <- 1000
-n <- 40
-p_vals <- replicate(n_sim, {
-  sim_data <- simulate_cox_data(n = n, hr = obs_hr, event_rate = event_rate)
-  sim_model <- coxph(Surv(time, status) ~ treatment, data = sim_data)
-  summary(sim_model)$coefficients["treatment", "Pr(>|z|)"]
-})
-
-simulated_power <- mean(p_vals < 0.05)
-simulated_power
-
-# Cox Regression w/ Firth's Correction for small samples:
-# Although Firth’s correction is often recommended in small samples to reduce 
-# bias in hazard ratio estimation, it can substantially increase variance and 
-# reduce statistical power due to conservative shrinkage. In this study, the 
-# Firth-corrected model yielded even lower simulated power than the uncorrected 
-# Cox model. Because the primary goal was to estimate power under observed trial 
-# conditions—not to minimize bias at the cost of further reduced sensitivity—the 
-# standard Cox model was used for the main power simulation.
-
-cocaine_clean <- cocaine_data_survival %>%
-  select(days_recoded, status_recoded, condition_recoded, Gender) %>%
-  filter(
-    !is.na(days_recoded),
-    !is.na(status_recoded),
-    !is.na(condition_recoded),
-    !is.na(Gender),
-    is.finite(days_recoded),
-    is.finite(status_recoded)
-  ) %>%
-  mutate(
-    days_recoded = ifelse(days_recoded == 0, 0.01, days_recoded),
-    condition_recoded = factor(condition_recoded, levels = c(0, 1), labels = c("Placebo", "Psilocybin")),
-    Gender = factor(as.character(Gender))
-  )
-
-firth_model <- coxphf(
-  Surv(days_recoded, status_recoded) ~ condition_recoded,
-  data = cocaine_clean
-)
-
-summary(firth_model)
-
-obs_hr_firth <- exp(coef(firth_model)["condition_recodedPsilocybin"])
-event_rate <- mean(cocaine_data_survival$status_recoded)
-n <- 40
-n_sim <- 1000
-alpha <- 0.05
-
-p_vals_firth <- numeric(n_sim)
-
-set.seed(2025)
-
-for (i in 1:n_sim) {
-  sim_data <- simulate_cox_data(n = n, hr = obs_hr_firth, event_rate = event_rate)
-  sim_data$time <- ifelse(sim_data$time == 0, 0.01, sim_data$time)
-  sim_data$treatment <- factor(sim_data$treatment, levels = c(0, 1), labels = c("Placebo", "Psilocybin"))
-  
-  fit <- tryCatch(
-    coxphf(Surv(time, status) ~ treatment, data = sim_data),
-    error = function(e) return(NULL)
-  )
-  
-  if (!is.null(fit)) {
-    p_vec <- summary(fit)$prob
-    if ("treatmentPsilocybin" %in% names(p_vec)) {
-      p_vals_firth[i] <- p_vec["treatmentPsilocybin"]
-    } else {
-      p_vals_firth[i] <- NA
-    }
-  } else {
-    p_vals_firth[i] <- NA
-  }
-  
-  if (i %% 10 == 0) cat("Simulation", i, "complete\n")
-}
-
-table(is.na(p_vals_firth))
-simulated_power_firth_true <- mean(p_vals_firth < alpha, na.rm = TRUE)
-simulated_power_firth_true

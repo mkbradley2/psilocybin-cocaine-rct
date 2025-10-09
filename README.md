@@ -33,7 +33,7 @@ This repository contains statistical analysis code for a randomized controlled t
   Kaplan-Meier curves and log-rank tests, Cox models for <i> time to first cocaine lapse</i> (Primary Outcome 2).
 
 - **04. Fisher's Exact and Logistic Regression.R**  
-  Fisher's Exact Test, Firth logistic regression for <i>Sustained abstinence from cocaine</i> (Primary Outcome 3), Hedges’ g calculation for group effect size, and simulation-based power estimation for binary outcomes.
+  Fisher's Exact Test, Firth logistic regression for <i>Sustained abstinence from cocaine</i> (Primary Outcome 3) and Hedges’ g calculation for group effect size.
 
 - **05. Additional Figures.R** <br>
   Waterfall plots for each participant's change in abstinent days (%) by condition (Placebo or Psilocybin) 1) Baseline to Follow-Up and 2) Prepartion to Follow-Up.

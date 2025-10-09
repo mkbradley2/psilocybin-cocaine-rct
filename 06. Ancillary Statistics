@@ -12,18 +12,6 @@ setwd("C:/Users/mbrad/Desktop/Hendricks Lab/Psilocybin and CUD Clinical Trial (P
 
 cocaine_data <- read.csv("cocaine_RCT_data.csv")
 
-# DSM and Other Substances Cross-Check----
-
-cocaine_data_filled <- cocaine_data %>%
-  fill(ID_Drug, MINI_Dx1:MINI_Dx7, .direction = "downup") %>%
-  mutate(Time = factor(Time, levels = time_levels))  # drop levels you don't want
-
-cocaine_data_filled <- cocaine_data %>%
-  arrange(ID_Sub, Time) %>%
-  group_by(ID_Sub) %>%
-  fill(ID_Drug, MINI_Dx1:MINI_Dx7, .direction = "downup") %>%
-  ungroup()
-
 # Date Since First Participant Drug Administration-----------------
 
 cocaine_data_filled <- cocaine_data_filled %>%

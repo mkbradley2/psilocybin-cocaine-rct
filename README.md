@@ -1,6 +1,6 @@
 # Psilocybin-assisted Psychotherapy in the Treatment of Cocaine Use Disorder: A Randomized Controlled Trial
 ### Created by: Melissa Bradley
-### Version: 05/27/2025
+### Version: 04/09/2026
 
 ## Background
 This repository contains statistical analysis code for a randomized controlled trial of psilocybin-assisted psychotherapy in the treatment of cocaine use disorder.

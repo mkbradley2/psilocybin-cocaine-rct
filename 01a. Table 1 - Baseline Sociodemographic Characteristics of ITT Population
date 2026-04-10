@@ -1,0 +1,160 @@
+# 01a. Table 1 Baseline Sociodemographic Characteristics of ITT Population
+# Lab: Dr. Peter Hendricks, UAB Drug Use and Behavior Lab
+# Date: 2025-04-05 (Updated 2026)
+#
+# Purpose:
+#   Generate baseline demographic summaries and between-group comparisons
+#   using descriptive statistics and gtsummary tables.
+#
+
+library(tidyverse)   # Data Tidying
+library(haven)       # Importing data from other software
+library(gtsummary)   # Summary tables
+library(kableExtra)  # Table features (used w/ gtsummary)
+library(ggplot2)     # Plotting
+
+# Set Working Directory
+setwd("C:/Users/mbrad/Desktop/Hendricks Lab/Psilocybin and CUD Clinical Trial (Peter)/Data/Output")
+
+cocaine_data <- read.csv("cocaine_RCT_data.csv")
+
+cocaine_demo <- cocaine_data %>%
+  filter(!is.na(ID_Drug), !is.na(Condition)) %>%
+  group_by(ID_Sub) %>%
+  fill(everything(), .direction = "downup") %>%
+  ungroup() %>%
+  distinct(ID_Sub, .keep_all = TRUE) %>%
+  mutate(
+    Condition = factor(Condition, levels = c("Psilocybin", "Placebo")),
+    
+    Gender = factor(Gender, levels = c("Male", "Female")),
+    
+    Race_Collapsed = factor(
+      ifelse(Race == "Caucasian/White", "White", "Black"),
+      levels = c("Black", "White")
+    ),
+    
+    # FIX 1: Added "none" -> "Heterosexual" mapping
+    # NOTE: Verify with case report forms that this is the correct assignment
+    SexOr_Full = case_when(
+      ID_Sub == 89 & ID_Drug == 1023  ~ "Pansexual",
+      ID_Sub == 53 & ID_Drug == 1016  ~ "Asexual",
+      SexOr == "Heterosexual"         ~ "Heterosexual",
+      SexOr == "Homosexual/Gay/Lesbian" ~ "Gay",
+      SexOr == "Bisexual"             ~ "Bisexual",
+      SexOr == "none"                 ~ "Heterosexual",
+      SexOr == "Pansexual"            ~ "Pansexual",
+      SexOr == "Asexual"              ~ "Asexual",
+      TRUE ~ NA_character_
+    ) %>% factor(levels = c("Heterosexual", "Gay", "Bisexual", "Pansexual", "Asexual")),
+    
+    Marital_Status = factor(Marital,
+                            levels = c("Single, never married", "Divorced or Separated", 
+                                       "Married", "Widowed")
+    ),
+    
+    # FIX 2: Use case_when to match actual SPSS labels for OccStatus
+    Employment_Status = case_when(
+      OccStatus == "Employed"               ~ "Employed",
+      OccStatus == "Unemployed"             ~ "Unemployed",
+      OccStatus == "Retired"                ~ "Retired or disabled",
+      OccStatus == "Full-time homemaker"    ~ "Homemaker",
+      OccStatus == "Student (not employed)" ~ "Student",
+      TRUE ~ NA_character_
+    ) %>% factor(levels = c("Employed", "Unemployed", "Retired or disabled", 
+                            "Homemaker", "Student")),
+    
+    Income_Full = factor(Income,
+                         levels = c("Less than $10,000", "$11,000 - $20,000", "$21,000 - $30,000",
+                                    "$31,000 - $40,000", "$41,000 - $50,000", "$51,000 - $60,000",
+                                    "$61,000 - $70,000", "$91,000 - $100,000")
+    ),
+    
+    # FIX 3: Added graduate degree categories + EduYears fallback for missing Degree
+    Edu_Collapsed = case_when(
+      # First, use Degree when available
+      Degree == "less than a High School degree"        ~ "Less than a high school degree",
+      Degree == "High School, GED"                      ~ "High school degree",
+      Degree == "A.A., A.S., Other Vocational Program"  ~ "Associate's degree/vocational training",
+      Degree == "B.A., B.S., Etc."                      ~ "Bachelor's degree",
+      Degree == "M.A., M.S., Etc."                      ~ "Bachelor's degree",
+      Degree == "Ph.D., M.D., J.D., Etc."              ~ "Bachelor's degree",
+      # Fallback: derive from EduYears when Degree is missing
+      is.na(Degree) & !is.na(EduYears) & EduYears < 12  ~ "Less than a high school degree",
+      is.na(Degree) & !is.na(EduYears) & EduYears == 12 ~ "High school degree",
+      is.na(Degree) & !is.na(EduYears) & EduYears %in% 13:15 ~ "Associate's degree/vocational training",
+      is.na(Degree) & !is.na(EduYears) & EduYears >= 16 ~ "Bachelor's degree",
+      TRUE ~ NA_character_
+    ) %>% factor(levels = c("Less than a high school degree", "High school degree",
+                            "Associate's degree/vocational training", "Bachelor's degree")),
+    
+    LivSit_Collapsed = case_when(
+      LivSit %in% c("House or Apartment (you own or rent)",
+                    "House or Apartment of friend or relative") ~ "Stable housing",
+      LivSit == "Homeless (streets, shelter, car, no stable arrangement)" ~ "Experiencing homelessness",
+      LivSit == "Halfway House or Residence in therapeutic community" ~ "Halfway house/therapeutic community",
+      TRUE ~ NA_character_
+    ) %>% factor(levels = c("Stable housing", "Experiencing homelessness", 
+                            "Halfway house/therapeutic community")),
+    
+    Veteran = factor(Veteran, levels = c("No", "Yes"))
+  )
+
+# ============================================================
+# Verification checks — run these before building the table
+# to confirm the fixes are working
+# ============================================================
+
+cat("\n=== Verification: Employment Status ===\n")
+print(table(cocaine_demo$Employment_Status, cocaine_demo$Condition, useNA = "ifany"))
+
+cat("\n=== Verification: Education ===\n")
+print(table(cocaine_demo$Edu_Collapsed, cocaine_demo$Condition, useNA = "ifany"))
+
+cat("\n=== Verification: Sexual Orientation ===\n")
+print(table(cocaine_demo$SexOr_Full, cocaine_demo$Condition, useNA = "ifany"))
+
+# ============================================================
+# Build Table 1
+# ============================================================
+
+table1 <- cocaine_demo %>%
+  select(
+    Condition, Gender, Race_Collapsed, Age, SexOr_Full, Marital_Status,
+    Employment_Status, Income_Full, Edu_Collapsed, LivSit_Collapsed, Veteran
+  ) %>%
+  tbl_summary(
+    by = Condition,
+    statistic = list(
+      all_categorical() ~ "{n} ({p}%)",
+      all_continuous()  ~ "{median} ({p25}, {p75})"
+    ),
+    digits = all_categorical() ~ c(0, 0),
+    label = list(
+      Gender             ~ "Gender",
+      Race_Collapsed     ~ "Ethnic Origin",
+      Age                ~ "Age (years)",
+      SexOr_Full         ~ "Sexual Orientation",
+      Marital_Status     ~ "Marital Status",
+      Employment_Status  ~ "Employment Status",
+      Income_Full        ~ "Annual Individual Income",
+      Edu_Collapsed      ~ "Educational Attainment",
+      LivSit_Collapsed   ~ "Living Situation",
+      Veteran            ~ "US Armed Forces Veteran"
+    ),
+    missing = "no"
+  ) %>%
+  add_p(
+    test = list(
+      all_categorical() ~ "fisher.test",
+      all_continuous()  ~ "wilcox.test"
+    ),
+    pvalue_fun = ~style_pvalue(.x, digits = 3)
+  ) %>%
+  bold_labels() %>%
+  modify_header(label ~ "**Characteristic**")
+
+print(table1)
+
+# To save:
+# gtsave(as_gt(table1), filename = "Table1_Demographics.rtf")

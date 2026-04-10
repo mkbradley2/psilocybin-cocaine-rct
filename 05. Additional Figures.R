@@ -1,3 +1,8 @@
+# 05. Additional Figures.r
+# Psilocybin CUD Trial - Waterfall Plots
+# Melissa Bradley
+# 01/20/25
+
 library(ggplot2)
 library(dplyr)
 library(tidyr)

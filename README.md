@@ -23,9 +23,12 @@ This repository contains statistical analysis code for a randomized controlled t
 
 ## Scripts
 
-- **01. Demographics Summary.R**  
-  Baseline demographic and clinical characteristics; between-group comparisons using `gtsummary`.
+- **01a. Table 1- Baseline Sociodemographic Characteristics of ITT Population .R**  
+  Baseline demographic characteristics.
 
+- **01b. Table 2- Baseline Drug Use History Characteristics of ITT Population .R**  
+  Baseline drug use history characteristics.
+  
 - **02. MMRM Models.R**  
   MMRM analysis of <i>Percentage of days abstinent from cocaine</i> (Primary Outcome 1), including adjusted/unadjusted models, time-by-condition interactions, and Hedge’s g effect size estimation. 
 

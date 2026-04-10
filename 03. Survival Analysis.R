@@ -1,11 +1,12 @@
 # 03. Survival Analysis.r
 # Psilocybin for Cocaine Use Disorder RCT - Survival Analysis
 # Lab: Dr. Peter Hendricks, UAB Drug Use and Behavior Lab
-# Date: 2025-04-05
+# Date: 2025-08-16
 #
 # Purpose:
 #   Conduct survival analysis on time to lapse using Cox models and Kaplan-Meier curves.
-#   Assess statistical power post-hoc through simulation.
+#   Assess statistical power post-hoc through simulation, including Firth correction 
+#   for small-sample bias (correction not included in final manuscript, see below).
 
 library(haven)       # Alternate Data Formats
 library(tidyverse)   # Tidying
@@ -41,6 +42,7 @@ cocaine_data_survival <- cocaine_data %>%
     Lapse_Event = case_when(
       STATUS_reconstructed == 0 ~ 1,  # Event (lapsed)
       STATUS_reconstructed == 1 ~ 0,  # Censored (no lapse observed)
+      
       TRUE ~ NA_real_
     ),
     
@@ -56,12 +58,12 @@ cocaine_data_survival <- cocaine_data %>%
   distinct(ID_Sub, .keep_all = TRUE) %>%
   mutate(
     days_recoded = case_when(
-      STATUS == 1 ~ Integration + 180, # If no lapse, observed through Integration + 180  
+      STATUS == 1 ~ Integration + 180,        # If no lapse, observed through Integration + 180  
       ID_Drug == 1027 ~ Integration + 90 + 1, # No 180 Data
       ID_Drug == 1030 ~ Integration + 90 + 1, # No 180 Data
       ID_Drug == 1037 ~ Integration + 1,      # No F/U Data
       ID_Drug == 1012 ~ 0,                    # No Post-Drug Administration Data
-      TRUE ~ DAYS + 1  # Event: use actual time to lapse
+      TRUE ~ DAYS + 1                         # Event: use actual time to lapse
     )
   )
 
@@ -103,14 +105,14 @@ survival_plot <- ggsurvplot(
   risk.table.col = "strata",
   pval = FALSE,  # we'll use our own annotation instead
   conf.int = TRUE,
-  xlab = "Days",
-  ylab = "Proportion Without Lapse (%)",
-  surv.scale = "percent",
+  xlab = "Days Since Drug Administration",
+  ylab = "Survival Probability",
+  # surv.scale = "percent",
   legend.title = "",
-  legend.labs = c("Placebo", "Psilocybin"),
+  legend.labs = c("Psilocybin", "Placebo"),
   legend = "right",
   ggtheme = theme_minimal(base_size = 14),
-  palette = c("#F8766D", "#00BFC4")
+  palette = c("#00BFC4", "#F8766D")
 )
 
 # Add HR and p-value as annotation on plot
@@ -137,8 +139,10 @@ ggsave(
   dpi = 300
 )
 
-surv_object <- Surv(time = cocaine_data_survival$days_recoded, event = cocaine_data_survival$event)
-
+surv_object <- Surv(
+  time  = cocaine_data_survival$days_recoded,
+  event = cocaine_data_survival$Lapse_Event
+)
 cox_model_unadjusted <- coxph(surv_object ~ condition_recoded, data = cocaine_data_survival)
 cox_model_adjusted <- coxph(surv_object ~ condition_recoded + Gender, data = cocaine_data_survival)
 
